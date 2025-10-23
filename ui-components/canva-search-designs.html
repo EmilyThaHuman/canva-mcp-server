@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Canva Design Search Results</title>
+  <style>
+    * { 
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', sans-serif;
+      background: linear-gradient(to bottom, #F5F5F7 0%, #E8E8EA 100%);
+      color: #1A1A1A;
+      padding: 24px;
+      min-height: 100vh;
+    }
+    
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    
+    .search-header {
+      margin-bottom: 32px;
+      border-bottom: 2px solid #00C4CC;
+      padding-bottom: 20px;
+    }
+    
+    .search-query {
+      font-size: 32px;
+      font-weight: 900;
+      color: #00C4CC;
+      margin-bottom: 8px;
+      letter-spacing: -0.5px;
+    }
+    
+    .search-stats {
+      font-size: 15px;
+      color: #6B6B6B;
+      font-weight: 500;
+    }
+    
+    .designs-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 24px;
+    }
+    
+    .design-card {
+      background: white;
+      border-radius: 16px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      border: 2px solid transparent;
+    }
+    
+    .design-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(0, 196, 204, 0.2);
+      border-color: #00C4CC;
+    }
+    
+    .design-thumbnail-container {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      overflow: hidden;
+      background: linear-gradient(135deg, #E8E8EA 0%, #F5F5F7 100%);
+    }
+    
+    .design-thumbnail {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.3s ease;
+    }
+    
+    .design-card:hover .design-thumbnail {
+      transform: scale(1.05);
+    }
+    
+    .design-type-badge {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      padding: 4px 12px;
+      background: rgba(0, 196, 204, 0.95);
+      color: white;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      backdrop-filter: blur(10px);
+    }
+    
+    .design-info {
+      padding: 20px;
+    }
+    
+    .design-title {
+      font-weight: 700;
+      font-size: 18px;
+      color: #1A1A1A;
+      margin-bottom: 12px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      line-height: 1.4;
+    }
+    
+    .design-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      font-size: 13px;
+      color: #6B6B6B;
+    }
+    
+    .design-meta-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .design-icon {
+      width: 16px;
+      height: 16px;
+      color: #00C4CC;
+    }
+    
+    .design-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+    }
+    
+    .action-button {
+      flex: 1;
+      padding: 10px 16px;
+      background: transparent;
+      border: 2px solid #00C4CC;
+      color: #00C4CC;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .action-button:hover {
+      background: #00C4CC;
+      color: white;
+      transform: scale(1.02);
+    }
+    
+    .action-button.primary {
+      background: #00C4CC;
+      color: white;
+    }
+    
+    .action-button.primary:hover {
+      background: #00B3BA;
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 80px 20px;
+      color: #6B6B6B;
+    }
+    
+    .empty-icon {
+      font-size: 80px;
+      margin-bottom: 24px;
+      opacity: 0.5;
+    }
+    
+    .empty-title {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      color: #1A1A1A;
+    }
+    
+    .empty-description {
+      font-size: 16px;
+      color: #6B6B6B;
+    }
+    
+    .pagination {
+      display: flex;
+      justify-content: center;
+      margin-top: 32px;
+      gap: 12px;
+    }
+    
+    .pagination-button {
+      padding: 12px 24px;
+      background: white;
+      border: 2px solid #00C4CC;
+      color: #00C4CC;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    .pagination-button:hover:not(:disabled) {
+      background: #00C4CC;
+      color: white;
+    }
+    
+    .pagination-button:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+    
+    @media (max-width: 768px) {
+      body {
+        padding: 16px;
+      }
+      
+      .search-query {
+        font-size: 24px;
+      }
+      
+      .designs-grid {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div id="root"></div>
+  </div>
+  
+  <script>
+    (function() {
+      const props = window.__WIDGET_PROPS__ || {};
+      const { query = '', designs = [], continuation = null } = props;
+      
+      const root = document.getElementById('root');
+      
+      // Header
+      if (query) {
+        const header = document.createElement('div');
+        header.className = 'search-header';
+        header.innerHTML = `
+          <div class="search-query">"${query}"</div>
+          <div class="search-stats">${designs.length} designs found</div>
+        `;
+        root.appendChild(header);
+      }
+      
+      if (designs && designs.length > 0) {
+        const grid = document.createElement('div');
+        grid.className = 'designs-grid';
+        
+        designs.forEach(design => {
+          const card = document.createElement('div');
+          card.className = 'design-card';
+          
+          const formattedDate = design.updated_at 
+            ? new Date(design.updated_at).toLocaleDateString('en-US', { 
+                month: 'short', 
+                day: 'numeric', 
+                year: 'numeric' 
+              })
+            : 'Unknown date';
+          
+          card.innerHTML = `
+            <div class="design-thumbnail-container">
+              <img 
+                src="${design.thumbnail?.url || 'https://via.placeholder.com/400x225?text=No+Preview'}" 
+                class="design-thumbnail" 
+                alt="${design.title}"
+                loading="lazy"
+              >
+              ${design.doctype_name ? `<div class="design-type-badge">${design.doctype_name}</div>` : ''}
+            </div>
+            <div class="design-info">
+              <div class="design-title">${design.title || 'Untitled Design'}</div>
+              <div class="design-meta">
+                <div class="design-meta-row">
+                  <svg class="design-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                  </svg>
+                  <span>Updated: ${formattedDate}</span>
+                </div>
+              </div>
+              <div class="design-actions">
+                <button class="action-button primary" data-action="open" data-design-id="${design.id}" data-url="${design.urls?.edit_url || design.urls?.view_url}">
+                  Open
+                </button>
+                <button class="action-button" data-action="info" data-design-id="${design.id}">
+                  Details
+                </button>
+              </div>
+            </div>
+          `;
+          
+          // Add click handlers
+          card.querySelectorAll('.action-button').forEach(button => {
+            button.addEventListener('click', (e) => {
+              e.stopPropagation();
+              const action = button.getAttribute('data-action');
+              const designId = button.getAttribute('data-design-id');
+              const url = button.getAttribute('data-url');
+              
+              if (window.parent && window.parent.postMessage) {
+                window.parent.postMessage({
+                  type: 'canva-design-action',
+                  data: { 
+                    action, 
+                    designId, 
+                    url,
+                    design 
+                  }
+                }, '*');
+              }
+            });
+          });
+          
+          // Card click handler
+          card.addEventListener('click', () => {
+            if (window.parent && window.parent.postMessage) {
+              window.parent.postMessage({
+                type: 'canva-design-clicked',
+                data: { 
+                  designId: design.id, 
+                  url: design.urls?.edit_url || design.urls?.view_url,
+                  design 
+                }
+              }, '*');
+            }
+          });
+          
+          grid.appendChild(card);
+        });
+        
+        root.appendChild(grid);
+        
+        // Pagination
+        if (continuation) {
+          const pagination = document.createElement('div');
+          pagination.className = 'pagination';
+          pagination.innerHTML = `
+            <button class="pagination-button" data-action="load-more" data-continuation="${continuation}">
+              Load More Designs
+            </button>
+          `;
+          
+          pagination.querySelector('.pagination-button').addEventListener('click', () => {
+            if (window.parent && window.parent.postMessage) {
+              window.parent.postMessage({
+                type: 'canva-load-more',
+                data: { continuation }
+              }, '*');
+            }
+          });
+          
+          root.appendChild(pagination);
+        }
+      } else {
+        const empty = document.createElement('div');
+        empty.className = 'empty-state';
+        empty.innerHTML = `
+          <div class="empty-icon">🎨</div>
+          <div class="empty-title">No designs found</div>
+          <div class="empty-description">Try adjusting your search criteria or create a new design.</div>
+        `;
+        root.appendChild(empty);
+      }
+    })();
+  </script>
+</body>
+</html>
+
