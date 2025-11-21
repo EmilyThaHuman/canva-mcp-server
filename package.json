@@ -3,12 +3,16 @@
   "version": "1.0.0",
   "description": "Model Context Protocol server for Canva integration with ChatGPT Apps SDK",
   "type": "module",
-  "main": "dist/server.js",
+  "main": "dist/server/server.js",
   "scripts": {
-    "build": "tsc",
-    "dev": "tsx src/server.ts",
-    "start": "node dist/server.js",
-    "typecheck": "tsc --noEmit"
+    "dev": "tsx src/server/server.ts",
+    "dev:preview": "vite",
+    "build": "tsc && vite build",
+    "build:server": "tsc -p tsconfig.build.json",
+    "build:widgets": "vite build",
+    "start": "node dist/server/server.js",
+    "typecheck": "tsc --noEmit",
+    "preview": "vite preview"
   },
   "keywords": [
     "mcp",
@@ -24,15 +28,28 @@
   "license": "MIT",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.4",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
     "zod": "^3.24.1"
   },
   "devDependencies": {
-    "@types/node": "^22.10.5",
+    "@cloudflare/workers-types": "^4.20251120.0",
+    "@types/node": "^22.19.1",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "autoprefixer": "^10.4.19",
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.1.1",
+    "postcss": "^8.4.38",
+    "tailwind-merge": "^2.3.0",
+    "tailwindcss": "^3.4.3",
     "tsx": "^4.19.2",
-    "typescript": "^5.7.3"
+    "typescript": "^5.7.3",
+    "vite": "^5.2.11",
+    "wrangler": "^4.50.0"
   },
   "engines": {
     "node": ">=18.0.0"
   }
 }
-

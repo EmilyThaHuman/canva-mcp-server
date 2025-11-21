@@ -1,0 +1,15 @@
+name = "canva-mcp-server"
+main = "src/server/worker.ts"
+compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]
+workers_dev = true
+
+# OAuth tokens storage
+[[kv_namespaces]]
+binding = "CANVA_TOKENS"
+id = "5032a502a5a747ff871af745273977a4"
+
+[vars]
+BASE_URL = "https://canva-mcp-server.reed-b9b.workers.dev"
+CANVA_REDIRECT_URI = "https://canva-mcp-server.reed-b9b.workers.dev/auth/callback"
+
