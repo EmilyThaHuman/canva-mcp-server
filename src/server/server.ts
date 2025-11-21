@@ -1631,8 +1631,30 @@ async function handleAuthCallback(req: IncomingMessage, res: ServerResponse, url
 const portEnv = Number(process.env.PORT ?? 8001);
 const port = Number.isFinite(portEnv) ? portEnv : 8001;
 
+// Helper function to set CORS headers
+function setCorsHeaders(res: ServerResponse, origin?: string) {
+  const allowedOrigins = [
+    'https://zerotwo.ai',
+    'http://localhost:3000',
+    'http://localhost:5173', // Vite dev server
+  ];
+  
+  const requestOrigin = origin || '*';
+  const allowOrigin = allowedOrigins.includes(requestOrigin) ? requestOrigin : '*';
+  
+  res.setHeader("Access-Control-Allow-Origin", allowOrigin);
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "content-type, authorization");
+  res.setHeader("Access-Control-Allow-Credentials", "true");
+}
+
 const httpServer = createServer(
   async (req: IncomingMessage, res: ServerResponse) => {
+    const origin = req.headers.origin;
+    
+    // Set CORS headers on all responses
+    setCorsHeaders(res, origin);
+    
     if (!req.url) {
       res.writeHead(400).end("Missing URL");
       return;
@@ -1644,11 +1666,7 @@ const httpServer = createServer(
       req.method === "OPTIONS" &&
       (url.pathname === ssePath || url.pathname === postPath)
     ) {
-      res.writeHead(204, {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-        "Access-Control-Allow-Headers": "content-type",
-      });
+      res.writeHead(204);
       res.end();
       return;
     }
