@@ -932,9 +932,10 @@ async function canvaApiRequest(
   sessionId: string,
   endpoint: string,
   method: string = "GET",
-  body?: any
+  body?: any,
+  accessTokenOverride?: string
 ): Promise<any> {
-  const accessToken = await getValidAccessToken(sessionId);
+  const accessToken = accessTokenOverride || await getValidAccessToken(sessionId);
   
   const headers: Record<string, string> = {
     Authorization: `Bearer ${accessToken}`,
@@ -1025,7 +1026,27 @@ function createCanvaServer(sessionId: string): Server {
       const toolName = request.params.name;
 
       // Check authentication for all tools
-      if (!authSessions.has(sessionId)) {
+      // First check if we have session tokens
+      let accessToken: string | null = null;
+      
+      if (authSessions.has(sessionId)) {
+        accessToken = await getValidAccessToken(sessionId);
+      } else {
+        // Fallback: Check for Authorization header stored in session (from HTTP request)
+        // This allows tokens from user profile to be passed via headers
+        const storedAuthHeader = sessionAuthHeaders.get(sessionId);
+        if (storedAuthHeader && storedAuthHeader.startsWith("Bearer ")) {
+          accessToken = storedAuthHeader.substring(7);
+          // Store in session for future use (without refresh token - will need re-auth when expired)
+          authSessions.set(sessionId, {
+            accessToken: accessToken,
+            refreshToken: "", // We don't have refresh token from header
+            expiresAt: Date.now() + 3600000, // Assume 1 hour expiration
+          });
+        }
+      }
+
+      if (!accessToken) {
         const state = crypto.randomBytes(16).toString("hex");
         const codeVerifier = generateCodeVerifier();
         pendingAuthStates.set(state, { sessionId, createdAt: Date.now(), codeVerifier });
@@ -1048,7 +1069,7 @@ function createCanvaServer(sessionId: string): Server {
           const data = await canvaApiRequest(sessionId, "/url-asset-uploads", "POST", {
             name: args.name,
             url: args.url,
-          });
+          }, accessToken);
 
           return {
             content: [
@@ -1081,7 +1102,7 @@ function createCanvaServer(sessionId: string): Server {
             params.append("continuation", args.continuation);
           }
 
-          const data = await canvaApiRequest(sessionId, `/designs?${params.toString()}`);
+          const data = await canvaApiRequest(sessionId, `/designs?${params.toString()}`, "GET", undefined, accessToken);
 
           return {
             content: [
@@ -1102,7 +1123,7 @@ function createCanvaServer(sessionId: string): Server {
         case "get-design": {
           const args = getDesignParser.parse(request.params.arguments ?? {});
           
-          const data = await canvaApiRequest(sessionId, `/designs/${args.designId}`);
+          const data = await canvaApiRequest(sessionId, `/designs/${args.designId}`, "GET", undefined, accessToken);
 
           return {
             content: [
@@ -1124,7 +1145,10 @@ function createCanvaServer(sessionId: string): Server {
 
           const data = await canvaApiRequest(
             sessionId,
-            `/designs/${args.designId}/pages?${params.toString()}`
+            `/designs/${args.designId}/pages?${params.toString()}`,
+            "GET",
+            undefined,
+            accessToken
           );
 
           return {
@@ -1141,7 +1165,7 @@ function createCanvaServer(sessionId: string): Server {
         case "get-design-content": {
           const args = getDesignContentParser.parse(request.params.arguments ?? {});
           
-          const data = await canvaApiRequest(sessionId, `/designs/${args.designId}/content`);
+          const data = await canvaApiRequest(sessionId, `/designs/${args.designId}/content`, "GET", undefined, accessToken);
 
           return {
             content: [
@@ -1162,7 +1186,7 @@ function createCanvaServer(sessionId: string): Server {
             body.parent_folder_id = args.parentFolderId;
           }
 
-          const data = await canvaApiRequest(sessionId, "/folders", "POST", body);
+          const data = await canvaApiRequest(sessionId, "/folders", "POST", body, accessToken);
 
           return {
             content: [
@@ -1180,7 +1204,7 @@ function createCanvaServer(sessionId: string): Server {
           
           await canvaApiRequest(sessionId, `/folders/${args.folderId}/items`, "POST", {
             item_id: args.itemId,
-          });
+          }, accessToken);
 
           return {
             content: [
@@ -1201,7 +1225,10 @@ function createCanvaServer(sessionId: string): Server {
 
           const data = await canvaApiRequest(
             sessionId,
-            `/folders/${args.folderId}/items?${params.toString()}`
+            `/folders/${args.folderId}/items?${params.toString()}`,
+            "GET",
+            undefined,
+            accessToken
           );
 
           return {
@@ -1224,7 +1251,8 @@ function createCanvaServer(sessionId: string): Server {
             "POST",
             {
               message_plaintext: args.message,
-            }
+            },
+            accessToken
           );
 
           return {
@@ -1247,7 +1275,10 @@ function createCanvaServer(sessionId: string): Server {
 
           const data = await canvaApiRequest(
             sessionId,
-            `/designs/${args.designId}/comments?${params.toString()}`
+            `/designs/${args.designId}/comments?${params.toString()}`,
+            "GET",
+            undefined,
+            accessToken
           );
 
           return {
@@ -1269,7 +1300,10 @@ function createCanvaServer(sessionId: string): Server {
 
           const data = await canvaApiRequest(
             sessionId,
-            `/designs/${args.designId}/comments/${args.threadId}/replies?${params.toString()}`
+            `/designs/${args.designId}/comments/${args.threadId}/replies?${params.toString()}`,
+            "GET",
+            undefined,
+            accessToken
           );
 
           return {
@@ -1292,7 +1326,8 @@ function createCanvaServer(sessionId: string): Server {
             "POST",
             {
               message_plaintext: args.message,
-            }
+            },
+            accessToken
           );
 
           return {
@@ -1315,7 +1350,7 @@ function createCanvaServer(sessionId: string): Server {
             body.asset_ids = args.assetIds;
           }
 
-          const data = await canvaApiRequest(sessionId, "/designs/generate", "POST", body);
+          const data = await canvaApiRequest(sessionId, "/designs/generate", "POST", body, accessToken);
 
           return {
             content: [
@@ -1335,7 +1370,9 @@ function createCanvaServer(sessionId: string): Server {
           const data = await canvaApiRequest(
             sessionId,
             `/designs/generate/${args.jobId}/candidates/${args.candidateId}`,
-            "POST"
+            "POST",
+            undefined,
+            accessToken
           );
 
           return {
@@ -1356,7 +1393,9 @@ function createCanvaServer(sessionId: string): Server {
           const data = await canvaApiRequest(
             sessionId,
             `/designs/${args.designId}/edit`,
-            "POST"
+            "POST",
+            undefined,
+            accessToken
           );
 
           return {
@@ -1380,7 +1419,8 @@ function createCanvaServer(sessionId: string): Server {
             "POST",
             {
               operations: args.operations,
-            }
+            },
+            accessToken
           );
 
           return {
@@ -1400,7 +1440,9 @@ function createCanvaServer(sessionId: string): Server {
           await canvaApiRequest(
             sessionId,
             `/designs/edit/${args.transactionId}/commit`,
-            "POST"
+            "POST",
+            undefined,
+            accessToken
           );
 
           return {
@@ -1419,7 +1461,9 @@ function createCanvaServer(sessionId: string): Server {
           await canvaApiRequest(
             sessionId,
             `/designs/edit/${args.transactionId}/cancel`,
-            "POST"
+            "POST",
+            undefined,
+            accessToken
           );
 
           return {
@@ -1437,7 +1481,10 @@ function createCanvaServer(sessionId: string): Server {
           
           const data = await canvaApiRequest(
             sessionId,
-            `/designs/edit/${args.transactionId}/pages/${args.pageIndex}/thumbnail`
+            `/designs/edit/${args.transactionId}/pages/${args.pageIndex}/thumbnail`,
+            "GET",
+            undefined,
+            accessToken
           );
 
           return {
@@ -1459,7 +1506,10 @@ function createCanvaServer(sessionId: string): Server {
 
           const data = await canvaApiRequest(
             sessionId,
-            `/assets?${params.toString()}`
+            `/assets?${params.toString()}`,
+            "GET",
+            undefined,
+            accessToken
           );
 
           return {
@@ -1485,23 +1535,41 @@ function createCanvaServer(sessionId: string): Server {
 type SessionRecord = {
   server: Server;
   transport: SSEServerTransport;
+  authHeader?: string; // Store Authorization header from HTTP requests
 };
 
 const sessions = new Map<string, SessionRecord>();
+// Map to store auth headers by sessionId (for looking up during tool calls)
+const sessionAuthHeaders = new Map<string, string>();
+// Map from transport.sessionId to actualSessionId (used in createCanvaServer closure)
+const transportToSessionId = new Map<string, string>();
 
 const ssePath = "/mcp";
 const postPath = "/mcp/messages";
 const authCallbackPath = "/auth/callback";
 
-async function handleSseRequest(res: ServerResponse, sessionId?: string) {
+async function handleSseRequest(res: ServerResponse, sessionId?: string, authHeader?: string) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   const actualSessionId = sessionId || crypto.randomBytes(16).toString("hex");
   const server = createCanvaServer(actualSessionId);
   const transport = new SSEServerTransport(postPath, res);
 
-  sessions.set(transport.sessionId, { server, transport });
+  // Store mapping from transport.sessionId to actualSessionId
+  transportToSessionId.set(transport.sessionId, actualSessionId);
+  
+  // Store auth header if provided (use actualSessionId which matches the closure in createCanvaServer)
+  if (authHeader) {
+    sessionAuthHeaders.set(actualSessionId, authHeader);
+  }
+
+  sessions.set(transport.sessionId, { server, transport, authHeader });
 
   transport.onclose = async () => {
+    const mappedSessionId = transportToSessionId.get(transport.sessionId);
+    if (mappedSessionId) {
+      sessionAuthHeaders.delete(mappedSessionId);
+      transportToSessionId.delete(transport.sessionId);
+    }
     sessions.delete(transport.sessionId);
     await server.close();
   };
@@ -1527,7 +1595,7 @@ async function handlePostMessage(
   url: URL
 ) {
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Headers", "content-type");
+  res.setHeader("Access-Control-Allow-Headers", "content-type, authorization");
   const sessionId = url.searchParams.get("sessionId");
 
   if (!sessionId) {
@@ -1540,6 +1608,21 @@ async function handlePostMessage(
   if (!session) {
     res.writeHead(404).end("Unknown session");
     return;
+  }
+
+  // Extract Authorization header from HTTP request and store in session
+  const authHeader = req.headers.authorization || req.headers.Authorization;
+  if (authHeader) {
+    const authHeaderStr = typeof authHeader === "string" ? authHeader : authHeader[0];
+    session.authHeader = authHeaderStr;
+    // Map transport.sessionId to actualSessionId and store authHeader with actualSessionId
+    const actualSessionId = transportToSessionId.get(sessionId);
+    if (actualSessionId) {
+      sessionAuthHeaders.set(actualSessionId, authHeaderStr);
+    } else {
+      // Fallback: also store with transport.sessionId in case mapping doesn't exist yet
+      sessionAuthHeaders.set(sessionId, authHeaderStr);
+    }
   }
 
   try {
@@ -1672,7 +1755,10 @@ const httpServer = createServer(
     }
 
     if (req.method === "GET" && url.pathname === ssePath) {
-      await handleSseRequest(res);
+      // Extract Authorization header if present
+      const authHeader = req.headers.authorization || req.headers.Authorization;
+      const authHeaderStr = authHeader ? (typeof authHeader === "string" ? authHeader : authHeader[0]) : undefined;
+      await handleSseRequest(res, undefined, authHeaderStr);
       return;
     }
 

@@ -60,3 +60,4 @@ curl https://your-railway-url.up.railway.app/health
 3. Callback to `/auth/callback`
 4. Tokens stored and user can use MCP tools
 
+
