@@ -1718,6 +1718,7 @@ const port = Number.isFinite(portEnv) ? portEnv : 8001;
 function setCorsHeaders(res: ServerResponse, origin?: string) {
   const allowedOrigins = [
     'https://zerotwo.ai',
+    'https://app.zerotwo.ai',
     'http://localhost:3000',
     'http://localhost:5173', // Vite dev server
   ];

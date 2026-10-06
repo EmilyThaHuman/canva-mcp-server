@@ -15,13 +15,16 @@ interface Props extends Record<string, unknown> {
   job_id?: string | null;
 }
 
-const CanvaDesignGenerator: React.FC = () => {
+const CanvaDesignGenerator: React.FC<Partial<Props>> = (externalProps) => {
   const props = useWidgetProps<Props>({
     candidates: [],
     job_id: null
   });
 
-  const { candidates, job_id } = props;
+  // Merge external props (for preview mode) with widget props
+  const finalProps = { ...props, ...externalProps };
+
+  const { candidates, job_id } = finalProps;
   const displayMode = useDisplayMode();
   const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);

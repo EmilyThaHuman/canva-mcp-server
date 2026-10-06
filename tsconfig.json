@@ -16,7 +16,7 @@
     "declarationMap": true,
     "sourceMap": true,
     "allowSyntheticDefaultImports": true,
-    "types": ["@cloudflare/workers-types", "node"],
+    "types": ["node"],
     "paths": {
       "@/*": ["./src/*"]
     }

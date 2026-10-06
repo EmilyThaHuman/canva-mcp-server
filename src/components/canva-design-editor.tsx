@@ -19,14 +19,17 @@ interface Props extends Record<string, unknown> {
   content?: ContentItem[];
 }
 
-const CanvaDesignEditor: React.FC = () => {
+const CanvaDesignEditor: React.FC<Partial<Props>> = (externalProps) => {
   const props = useWidgetProps<Props>({
     transaction_id: null,
     pages: [],
     content: []
   });
 
-  const { transaction_id } = props;
+  // Merge external props (for preview mode) with widget props
+  const finalProps = { ...props, ...externalProps };
+
+  const { transaction_id } = finalProps;
 
   useEffect(() => {
     // Automatically start design session when component mounts

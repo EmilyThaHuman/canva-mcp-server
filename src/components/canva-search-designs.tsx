@@ -27,14 +27,17 @@ interface Props extends Record<string, unknown> {
   continuation?: string | null;
 }
 
-const CanvaSearchDesigns: React.FC = () => {
+const CanvaSearchDesigns: React.FC<Partial<Props>> = (externalProps) => {
   const props = useWidgetProps<Props>({
     query: '',
     designs: [],
     continuation: null
   });
 
-  const { query, designs, continuation } = props;
+  // Merge external props (for preview mode) with widget props
+  const finalProps = { ...props, ...externalProps };
+
+  const { query, designs, continuation } = finalProps;
   const displayMode = useDisplayMode();
 
   const handleDesignClick = (design: Design) => {
